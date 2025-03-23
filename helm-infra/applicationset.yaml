@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: redis-lettuce-demo
+  name: redis
   namespace: argocd
 spec:
   generators:
@@ -11,7 +11,7 @@ spec:
               repoURL: "https://github.com/zhangchl007/redis-lettuce-demo-manifests.git"
               revision: HEAD
               files:
-                - path: "helm-app/env/*/values.yaml"
+                - path: "helm-infra/env/*/values.yaml"
           - clusters:
               # Adjust the selector as needed to include your clusters (e.g., dev, prod, in-cluster)
               selector:
@@ -23,19 +23,19 @@ spec:
                       - prod
   template:
     metadata:
-      name: "redisdemo-{{path.basename}}"
+      name: "redis-{{path.basename}}"
     spec:
       project: default
       source:
         repoURL: "https://github.com/zhangchl007/redis-lettuce-demo-manifests.git"
         targetRevision: HEAD
-        path: "helm-app"
+        path: "helm-infra"
         helm:
           valueFiles:
             - "env/{path.basename}}/values.yaml"
       destination:
         server: "{{cluster.server}}"
-        namespace: "{{path.basename}}"
+        namespace: "infra-{{path.basename}}"
       syncPolicy:
         automated: {}
         syncOptions:
