@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: gitops-demo
+  namespace: argocd
+spec:
+  description: Redis Lettuce Demo Project
+  sourceRepos:
+    - "https://github.com/zhangchl007/redis-lettuce-demo-manifests.git"
+  destinations:
+    - server: "*"
+      namespace: "*"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
