@@ -35,7 +35,7 @@ spec:
             - "env/{{path.basename}}/values.yaml"
       destination:
         server: '{{url}}'
-        namespace: "redis-{{path.basename}}"
+        namespace: "infra-{{path.basename}}"
       syncPolicy:
         automated: {}
         syncOptions:
