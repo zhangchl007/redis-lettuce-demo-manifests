@@ -12,7 +12,7 @@ image:
 
 imagePullSecrets: []
 env:
-  REDIS_HOST: redis-master.infra-prod.svc
+  REDIS_HOST: redis-prod-master.infra-prod.svc
   REDIS_PORT: "6379"
   REDIS_PASS: test1234
 nameOverride: ""
