@@ -11,10 +11,6 @@ image:
   tag: "prod"
 
 imagePullSecrets: []
-env:
-  REDIS_HOST: redis-prod-master.infra-prod.svc
-  REDIS_PORT: "6379"
-  REDIS_PASS: test1234
 nameOverride: ""
 fullnameOverride: ""
 
@@ -42,7 +38,10 @@ securityContext: {}
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
-
+redis:
+  host: redis-dev-master.infra-dev.svc
+  port: 6379
+  password: test1234
 #service:
 #  type: ClusterIP
 #  port: 80
