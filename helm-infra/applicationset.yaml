@@ -25,7 +25,7 @@ spec:
     metadata:
       name: "redis-{{path.basename}}"
     spec:
-      project: default
+      project: gitops-demo
       source:
         repoURL: "https://github.com/zhangchl007/redis-lettuce-demo-manifests.git"
         targetRevision: HEAD
