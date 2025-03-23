@@ -5,25 +5,17 @@ metadata:
   namespace: argocd
 spec:
   generators:
-    - matrix:
-        generators:
-          - git:
-              repoURL: "https://github.com/zhangchl007/redis-lettuce-demo-manifests.git"
-              revision: HEAD
-              files:
-                - path: "gitops-demo/helm-infra/env/*/values.yaml"
-          - list:
-              elements:
-              - cluster: dev
-                url: https://dev-gitops-dev-gitops-aks-r-bba32a-e4d7kf15.hcp.westus2.azmk8s.io:443
-              - cluster: prod1
-                url: https://10.5.16.4:6443
-        # Only include combinations where the cluster matches the environment
-        include:
-          - cluster: "{{ path.basename }}"
+    - list:
+        elements:
+        - cluster: dev
+          url: https://dev-gitops-dev-gitops-aks-r-bba32a-e4d7kf15.hcp.westus2.azmk8s.io:443
+          environment: dev
+        - cluster: prod1
+          url: https://10.5.16.4:6443
+          environment: prod1
   template:
     metadata:
-      name: "redis-{{path.basename}}"
+      name: "redis-{{cluster}}"
     spec:
       project: gitops-demo
       source:
@@ -32,10 +24,10 @@ spec:
         path: "gitops-demo/helm-infra"
         helm:
           valueFiles:
-            - "env/{{path.basename}}/values.yaml"
+            - "env/{{environment}}/values.yaml"
       destination:
         server: '{{url}}'
-        namespace: "infra-{{path.basename}}"
+        namespace: "infra-{{environment}}"
       syncPolicy:
         automated: {}
         syncOptions:
