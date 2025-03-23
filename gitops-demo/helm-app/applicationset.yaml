@@ -13,11 +13,11 @@ spec:
               files:
                 - path: "gitops-demo/helm-app/env/*/values.yaml"
           - list:
-            elements:
-            - cluster: dev
-              url: https://dev-gitops-dev-gitops-aks-r-bba32a-e4d7kf15.hcp.westus2.azmk8s.io:443
-            - cluster: prod
-              url: https://prod-gitop-prod-gitops-aks--bba32a-9y95o74w.hcp.westus2.azmk8s.io:443
+              elements:
+              - cluster: dev
+                url: https://dev-gitops-dev-gitops-aks-r-bba32a-e4d7kf15.hcp.westus2.azmk8s.io:443
+              - cluster: prod
+                url: https://prod-gitop-prod-gitops-aks--bba32a-9y95o74w.hcp.westus2.azmk8s.io:443
   template:
     metadata:
       name: "redisdemo-{{path.basename}}"
