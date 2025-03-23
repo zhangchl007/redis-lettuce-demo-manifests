@@ -20,7 +20,7 @@ spec:
                 url: https://prod-gitop-prod-gitops-aks--bba32a-9y95o74w.hcp.westus2.azmk8s.io:443
   template:
     metadata:
-      name: "redisdemo-{{git.path.basename}}"
+      name: "redisdemo-{{git.path.basename}}-{{cluster}}"
     spec:
       project: gitops-demo
       source:
