@@ -20,19 +20,19 @@ spec:
                 url: https://prod-gitop-prod-gitops-aks--bba32a-9y95o74w.hcp.westus2.azmk8s.io:443
   template:
     metadata:
-      name: "redisdemo-{{path.basename}}"
+      name: "redisdemo-{{git.path.basename}}"
     spec:
       project: gitops-demo
       source:
         repoURL: "https://github.com/zhangchl007/redis-lettuce-demo-manifests.git"
         targetRevision: HEAD
-        path: "/gitops-demo/helm-app"
+        path: "gitops-demo/helm-app"  # Remove the leading slash
         helm:
           valueFiles:
-            - "env/{path.basename}}/values.yaml"
+            - "env/{{git.path.basename}}/values.yaml"  # Fix the curly braces
       destination:
         server: '{{url}}'
-        namespace: "{{path.basename}}"
+        namespace: "{{git.path.basename}}"
       syncPolicy:
         automated: {}
         syncOptions:
