@@ -12,15 +12,12 @@ spec:
               revision: HEAD
               files:
                 - path: "gitops-demo/helm-app/env/*/values.yaml"
-          - clusters:
-              # Adjust the selector as needed to include your clusters (e.g., dev, prod, in-cluster)
-              selector:
-                matchExpressions:
-                  - key: "name"
-                    operator: In
-                    values:
-                      - dev
-                      - prod
+          - list:
+            elements:
+            - cluster: dev
+              url: https://dev-gitops-dev-gitops-aks-r-bba32a-e4d7kf15.hcp.westus2.azmk8s.io:443
+            - cluster: prod
+              url: https://prod-gitop-prod-gitops-aks--bba32a-9y95o74w.hcp.westus2.azmk8s.io:443
   template:
     metadata:
       name: "redisdemo-{{path.basename}}"
@@ -34,7 +31,7 @@ spec:
           valueFiles:
             - "env/{path.basename}}/values.yaml"
       destination:
-        server: "{{cluster.server}}"
+        server: '{{url}}'
         namespace: "{{path.basename}}"
       syncPolicy:
         automated: {}
