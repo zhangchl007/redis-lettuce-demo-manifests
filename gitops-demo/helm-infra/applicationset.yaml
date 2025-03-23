@@ -18,6 +18,9 @@ spec:
                 url: https://dev-gitops-dev-gitops-aks-r-bba32a-e4d7kf15.hcp.westus2.azmk8s.io:443
               - cluster: prod
                 url: https://prod-gitop-prod-gitops-aks--bba32a-9y95o74w.hcp.westus2.azmk8s.io:443
+        # Only include combinations where the cluster matches the environment
+        include:
+          - cluster: "{{ path.basename }}"
   template:
     metadata:
       name: "redis-{{path.basename}}"
@@ -32,7 +35,7 @@ spec:
             - "env/{{path.basename}}/values.yaml"
       destination:
         server: '{{url}}'
-        namespace: "infra-{{path.basename}}"
+        namespace: "redis-{{path.basename}}"
       syncPolicy:
         automated: {}
         syncOptions:
