@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: docker.io/zhangchl007/redisdev
+  repository: docker.io/zhangchl007/redisdemo
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "dev"
