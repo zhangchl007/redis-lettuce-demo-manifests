@@ -1,0 +1,8 @@
+helm:
+  parameters:
+  - name: image.name
+    value: docker.io/zhangchl007/redisdemo
+    forcestring: true
+  - name: image.tag
+    value: v115
+    forcestring: true
