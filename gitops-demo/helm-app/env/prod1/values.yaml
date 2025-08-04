@@ -8,7 +8,7 @@ image:
   repository: docker.io/zhangchl007/redisdemo
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v114"
+  tag: "v14"
 
 imagePullSecrets: []
 nameOverride: ""
