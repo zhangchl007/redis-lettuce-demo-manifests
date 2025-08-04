@@ -8,10 +8,10 @@ spec:
     - list:
         elements:
         - cluster: dev
-          url: https://dev-gitops-dev-gitops-aks-r-bba32a-e4d7kf15.hcp.westus2.azmk8s.io:443
+          url: https://dev-aphid-ag7ava9s.hcp.brazilsouth.azmk8s.io:443
           environment: dev
         - cluster: prod1
-          url: https://prod-gitop-prod-gitops-aks--bba32a-9y95o74w.hcp.westus2.azmk8s.io:443
+          url: https://prod-weevil-jf8xyfdc.hcp.brazilsouth.azmk8s.io:443
           environment: prod1
   template:
     metadata:
