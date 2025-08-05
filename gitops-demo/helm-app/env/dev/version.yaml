@@ -1,5 +1,5 @@
 deployment:
   image:
     name: docker.io/zhangchl007/redisdemo
-    tag: v1-dev
+    tag: v1
   imagePullPolicy: IfNotPresent
