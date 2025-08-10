@@ -4,5 +4,5 @@ helm:
     value: docker.io/zhangchl007/redisdemo
     forcestring: true
   - name: image.tag
-    value: v27
+    value: v33
     forcestring: true
