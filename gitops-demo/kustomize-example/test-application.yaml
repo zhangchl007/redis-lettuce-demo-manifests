@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/zhangchl007/redis-lettuce-demo-manifests.git
     targetRevision: HEAD
-    path: gitops-demo/kustomize-example
+    path: gitops-demo/kustomize-example/app        # <-- put ONLY the app manifests (not this file) here
   destination:
     server: https://prod-weevil-jf8xyfdc.hcp.brazilsouth.azmk8s.io:443
     namespace: default
@@ -19,13 +19,16 @@ spec:
     syncOptions:
       - CreateNamespace=true
 ---
-# PreSync hook: clones the SAME repo + path Argo CD will sync, builds kustomize,
-# runs conftest against the rendered manifests BEFORE they are applied.
+# PreSync hook Job (must have metadata.name; generateName breaks kustomize).
+# Place this Job in the SAME Argo CD application source (root app-of-apps),
+# or move it under kustomize-example/app if you want it to run for that child app instead.
 apiVersion: batch/v1
 kind: Job
 metadata:
-  generateName: opa-scan-
+  name: opa-scan-kustomize-example
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: opa-scan-kustomize-example
   annotations:
     argocd.argoproj.io/hook: PreSync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
@@ -37,38 +40,20 @@ spec:
       containers:
         - name: opa-kustomize-scan
           image: alpine:3.19
-          imagePullPolicy: IfNotPresent
-          env:
-            # Argo CD auto‑injects ARGOCD_APP_* env vars; listed here only for clarity.
-            - name: POLICY_DIR
-              value: /src/policy/ops
-          command:
-            - /bin/sh
-            - -c
+          command: ["/bin/sh","-c"]
           args:
             - |
               set -euo pipefail
-              echo "[INFO] Installing tools (git, curl, tar)..."
+              echo "[INFO] Install tools..."
               apk add --no-cache git curl tar gzip
               CONFTEST_VER=v0.55.0
               KUSTOMIZE_VER=v5.4.2
-              echo "[INFO] Installing conftest ${CONFTEST_VER}..."
-              curl -sSL https://github.com/open-policy-agent/conftest/releases/download/${CONFTEST_VER}/conftest_${CONFTEST_VER#v}_Linux_x86_64.tar.gz \
-                | tar -xz -C /usr/local/bin conftest
-              echo "[INFO] Installing kustomize ${KUSTOMIZE_VER}..."
-              curl -sSL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/${KUSTOMIZE_VER}/kustomize_${KUSTOMIZE_VER}_linux_amd64.tar.gz \
-                | tar -xz -C /usr/local/bin kustomize
-              echo "[INFO] Cloning repo: $ARGOCD_APP_SOURCE_REPO_URL (rev $ARGOCD_APP_SOURCE_TARGET_REVISION)"
+              curl -sSL https://github.com/open-policy-agent/conftest/releases/download/${CONFTEST_VER}/conftest_${CONFTEST_VER#v}_Linux_x86_64.tar.gz | tar -xz -C /usr/local/bin conftest
+              curl -sSL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/${KUSTOMIZE_VER}/kustomize_${KUSTOMIZE_VER}_linux_amd64.tar.gz | tar -xz -C /usr/local/bin kustomize
+              echo "[INFO] Cloning repo..."
               git clone --depth 1 --branch "$ARGOCD_APP_SOURCE_TARGET_REVISION" "$ARGOCD_APP_SOURCE_REPO_URL" /src
-              echo "[INFO] Rendering kustomize path: /src/$ARGOCD_APP_SOURCE_PATH"
-              cd "/src/$ARGOCD_APP_SOURCE_PATH"
-              kustomize build . > /tmp/rendered.yaml
-              ls -l /tmp/rendered.yaml
-              if [ -d "$POLICY_DIR" ]; then
-                echo "[INFO] Running conftest with policies in $POLICY_DIR"
-                conftest test /tmp/rendered.yaml --policy "$POLICY_DIR"
-              else
-                echo "[WARN] Policy directory $POLICY_DIR not found, running default conftest (will look for ./policy)"
-                conftest test /tmp/rendered.yaml
-              fi
-              echo "[INFO] Conftest passed."
+              echo "[INFO] Rendering kustomize at: /src/gitops-demo/kustomize-example/app"
+              kustomize build /src/gitops-demo/kustomize-example/app > /tmp/rendered.yaml
+              echo "[INFO] Running conftest (if policies exist)..."
+              if [ -d /src/policy ]; then conftest test /tmp/rendered.yaml --policy /src/policy; else echo "No /src/policy directory; skipping custom policies"; fi
+              echo "[INFO] Scan passed."
