@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/zhangchl007/redis-lettuce-demo-manifests.git
     targetRevision: HEAD
-    path: gitops-demo/kustomize-example/app        # <-- put ONLY the app manifests (not this file) here
+    path: gitops-demo/kustomize-example/app
   destination:
     server: https://prod-weevil-jf8xyfdc.hcp.brazilsouth.azmk8s.io:443
     namespace: default
@@ -19,9 +19,6 @@ spec:
     syncOptions:
       - CreateNamespace=true
 ---
-# PreSync hook Job (must have metadata.name; generateName breaks kustomize).
-# Place this Job in the SAME Argo CD application source (root app-of-apps),
-# or move it under kustomize-example/app if you want it to run for that child app instead.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -40,20 +37,34 @@ spec:
       containers:
         - name: opa-kustomize-scan
           image: alpine:3.19
+          env:
+            - name: REPO_URL
+              value: https://github.com/zhangchl007/redis-lettuce-demo-manifests.git
+            - name: REVISION
+              value: HEAD
+            - name: KUSTOMIZE_PATH
+              value: gitops-demo/kustomize-example/app
+            - name: POLICY_DIR
+              value: policy
           command: ["/bin/sh","-c"]
           args:
             - |
-              set -euo pipefail
-              echo "[INFO] Install tools..."
+              set -eo pipefail
+              echo "[INFO] Using repo=${REPO_URL} revision=${REVISION} path=${KUSTOMIZE_PATH}"
               apk add --no-cache git curl tar gzip
               CONFTEST_VER=v0.55.0
               KUSTOMIZE_VER=v5.4.2
               curl -sSL https://github.com/open-policy-agent/conftest/releases/download/${CONFTEST_VER}/conftest_${CONFTEST_VER#v}_Linux_x86_64.tar.gz | tar -xz -C /usr/local/bin conftest
               curl -sSL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/${KUSTOMIZE_VER}/kustomize_${KUSTOMIZE_VER}_linux_amd64.tar.gz | tar -xz -C /usr/local/bin kustomize
-              echo "[INFO] Cloning repo..."
-              git clone --depth 1 --branch "$ARGOCD_APP_SOURCE_TARGET_REVISION" "$ARGOCD_APP_SOURCE_REPO_URL" /src
-              echo "[INFO] Rendering kustomize at: /src/gitops-demo/kustomize-example/app"
-              kustomize build /src/gitops-demo/kustomize-example/app > /tmp/rendered.yaml
-              echo "[INFO] Running conftest (if policies exist)..."
-              if [ -d /src/policy ]; then conftest test /tmp/rendered.yaml --policy /src/policy; else echo "No /src/policy directory; skipping custom policies"; fi
+              git clone --depth 1 --branch "${REVISION}" "${REPO_URL}" /src
+              echo "[INFO] Rendering kustomize..."
+              kustomize build "/src/${KUSTOMIZE_PATH}" > /tmp/rendered.yaml
+              echo "[INFO] Rendered manifest size:"
+              wc -l /tmp/rendered.yaml
+              if [ -d "/src/${POLICY_DIR}" ]; then
+                echo "[INFO] Running conftest with /src/${POLICY_DIR}"
+                conftest test /tmp/rendered.yaml --policy "/src/${POLICY_DIR}"
+              else
+                echo "[WARN] No policy dir found; skipping policy tests"
+              fi
               echo "[INFO] Scan passed."
