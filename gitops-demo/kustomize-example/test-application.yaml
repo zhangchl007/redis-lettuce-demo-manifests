@@ -1,0 +1,74 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kustomize-example
+  namespace: argocd
+spec:
+  project: gitops-demo
+  source:
+    repoURL: https://github.com/zhangchl007/redis-lettuce-demo-manifests.git
+    targetRevision: HEAD
+    path: gitops-demo/kustomize-example
+  destination:
+    server: https://prod-weevil-jf8xyfdc.hcp.brazilsouth.azmk8s.io:443
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+# PreSync hook: clones the SAME repo + path Argo CD will sync, builds kustomize,
+# runs conftest against the rendered manifests BEFORE they are applied.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: opa-scan-
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: opa-kustomize-scan
+          image: alpine:3.19
+          imagePullPolicy: IfNotPresent
+          env:
+            # Argo CD auto‑injects ARGOCD_APP_* env vars; listed here only for clarity.
+            - name: POLICY_DIR
+              value: /src/policy/ops
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              set -euo pipefail
+              echo "[INFO] Installing tools (git, curl, tar)..."
+              apk add --no-cache git curl tar gzip
+              CONFTEST_VER=v0.55.0
+              KUSTOMIZE_VER=v5.4.2
+              echo "[INFO] Installing conftest ${CONFTEST_VER}..."
+              curl -sSL https://github.com/open-policy-agent/conftest/releases/download/${CONFTEST_VER}/conftest_${CONFTEST_VER#v}_Linux_x86_64.tar.gz \
+                | tar -xz -C /usr/local/bin conftest
+              echo "[INFO] Installing kustomize ${KUSTOMIZE_VER}..."
+              curl -sSL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/${KUSTOMIZE_VER}/kustomize_${KUSTOMIZE_VER}_linux_amd64.tar.gz \
+                | tar -xz -C /usr/local/bin kustomize
+              echo "[INFO] Cloning repo: $ARGOCD_APP_SOURCE_REPO_URL (rev $ARGOCD_APP_SOURCE_TARGET_REVISION)"
+              git clone --depth 1 --branch "$ARGOCD_APP_SOURCE_TARGET_REVISION" "$ARGOCD_APP_SOURCE_REPO_URL" /src
+              echo "[INFO] Rendering kustomize path: /src/$ARGOCD_APP_SOURCE_PATH"
+              cd "/src/$ARGOCD_APP_SOURCE_PATH"
+              kustomize build . > /tmp/rendered.yaml
+              ls -l /tmp/rendered.yaml
+              if [ -d "$POLICY_DIR" ]; then
+                echo "[INFO] Running conftest with policies in $POLICY_DIR"
+                conftest test /tmp/rendered.yaml --policy "$POLICY_DIR"
+              else
+                echo "[WARN] Policy directory $POLICY_DIR not found, running default conftest (will look for ./policy)"
+                conftest test /tmp/rendered.yaml
+              fi
+              echo "[INFO] Conftest passed."

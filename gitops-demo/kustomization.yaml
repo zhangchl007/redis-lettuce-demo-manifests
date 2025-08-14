@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - helm-app/applicationset.yaml
   - helm-infra/applicationset.yaml
+  - kustomize-example/test-application.yaml
